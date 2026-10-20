@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sudoku Solver - Interactive Backtracking Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="masthead">
+    <div class="wrap">
+      <p class="course">Design and Analysis of Algorithms - Lab project</p>
+      <h1>Sudoku Solver</h1>
+      <p class="subtitle">An interactive backtracking visualizer. Enter a puzzle, press Solve, and watch the algorithm try digits, accept them and undo them.</p>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+
+    <!-- ===================== LEFT: the board ===================== -->
+    <section class="panel board-panel" aria-label="Sudoku board">
+      <!-- app.js creates the 81 input cells inside this div -->
+      <div id="board" class="board"></div>
+
+      <p id="message" class="message info" role="status" aria-live="polite">
+        Type digits 1-9 into the grid, or load a sample puzzle. Then press Solve.
+      </p>
+
+      <ul class="legend" aria-label="Colour key">
+        <li><span class="swatch sw-given"></span>Clue</li>
+        <li><span class="swatch sw-trying"></span>Trying</li>
+        <li><span class="swatch sw-rejected"></span>Rejected</li>
+        <li><span class="swatch sw-placed"></span>Accepted</li>
+        <li><span class="swatch sw-backtracked"></span>Backtracked</li>
+        <li><span class="swatch sw-solved"></span>Solved</li>
+      </ul>
+    </section>
+
+    <!-- ===================== RIGHT: controls and results ===================== -->
+    <div class="side">
+
+      <section class="panel">
+        <h2>Sample puzzles</h2>
+        <!-- app.js adds one button per puzzle from puzzles.js -->
+        <div id="samples" class="chips"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Controls</h2>
+        <div class="buttons">
+          <button id="btn-solve" class="btn btn-primary" type="button">Solve</button>
+          <button id="btn-pause" class="btn" type="button" disabled>Pause</button>
+          <button id="btn-step" class="btn" type="button">Step</button>
+          <button id="btn-instant" class="btn" type="button">Solve instantly</button>
+          <button id="btn-reset" class="btn" type="button">Reset</button>
+          <button id="btn-clear" class="btn btn-danger" type="button">Clear</button>
+        </div>
+        <p class="hint">Solve plays the search step by step. Step moves one move at a time. Reset removes the solver's digits and keeps your clues. Clear empties the whole board.</p>
+
+        <div class="speed">
+          <label for="speed">Speed</label>
+          <input id="speed" type="range" min="1" max="10" value="6">
+          <output id="speed-label" for="speed">120 steps/sec</output>
+        </div>
+
+        <div class="progress" aria-hidden="true"><div id="progress-bar" class="progress-bar"></div></div>
+        <p id="progress-label" class="progress-label">No search running</p>
+      </section>
+
+      <section class="panel">
+        <h2>Statistics</h2>
+        <dl class="stats">
+          <div class="stat"><dt>Recursive calls</dt><dd id="stat-calls">0</dd></div>
+          <div class="stat"><dt>Attempted placements</dt><dd id="stat-attempts">0</dd></div>
+          <div class="stat"><dt>Accepted placements</dt><dd id="stat-accepted">0</dd></div>
+          <div class="stat"><dt>Backtracks</dt><dd id="stat-backtracks">0</dd></div>
+          <div class="stat"><dt>Recursion depth</dt><dd id="stat-depth">0</dd></div>
+          <div class="stat"><dt>Execution time</dt><dd id="stat-time">-</dd></div>
+        </dl>
+        <p class="hint">Execution time is measured on a separate run with no animation, so it shows the algorithm's real speed.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Step log <span class="sub">newest first</span></h2>
+        <p id="log-empty" class="hint">Moves appear here once you press Solve or Step.</p>
+        <ol id="log" class="log" aria-live="off"></ol>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ===================== THEORY ===================== -->
+  <section class="wrap theory" aria-label="Algorithm and complexity">
+    <h2>How the algorithm works</h2>
+
+    <div class="theory-grid">
+      <article class="panel">
+        <h3>Recursive backtracking</h3>
+        <p>The solver always fills the first empty cell. It tries the digits 1 to 9 in order. A digit is accepted only if it does not already appear in that row, column or 3x3 box. After accepting a digit the solver calls itself for the next empty cell. If that call fails, the digit is erased (a backtrack) and the next digit is tried. If all nine digits fail, the function returns false and the previous cell is retried.</p>
+<pre><code>solve(board):
+  cell = first empty cell
+  if there is no empty cell:
+      return TRUE                  # base case: solved
+  for digit = 1 to 9:
+      if digit is safe in row, column, box:
+          place digit
+          if solve(board): return TRUE
+          remove digit             # BACKTRACK
+  return FALSE                     # caller must backtrack</code></pre>
+      </article>
+
+      <article class="panel">
+        <h3>What the counters mean</h3>
+        <dl class="defs">
+          <dt>Recursive call</dt>
+          <dd>One run of <code>solve()</code>. There is one call at the start and one more for every accepted digit, so calls = accepted placements + 1.</dd>
+          <dt>Attempted placement</dt>
+          <dd>One candidate digit tested in a cell, whether it was accepted or rejected.</dd>
+          <dt>Accepted placement</dt>
+          <dd>A candidate that passed the row, column and box check and was written to the board.</dd>
+          <dt>Backtrack</dt>
+          <dd>An accepted digit that was erased because the deeper calls could not finish the puzzle.</dd>
+        </dl>
+      </article>
+    </div>
+
+    <h2>Complexity analysis</h2>
+    <p class="lead">Let <em>m</em> be the number of empty cells (at most 81).</p>
+
+    <div class="theory-grid">
+      <article class="panel">
+        <h3>Time complexity</h3>
+        <table>
+          <thead><tr><th>Case</th><th>Time</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Best</td><td>O(m)</td><td>Every first valid digit is correct, so there is no backtracking: m + 1 calls.</td></tr>
+            <tr><td>Worst</td><td>O(9<sup>m</sup>)</td><td>The recursion tree is at most m levels deep and each cell branches into at most 9 digits.</td></tr>
+          </tbody>
+        </table>
+        <p>Work inside one call is constant for a 9x9 board: scanning for an empty cell costs at most 81 steps, and each of the 9 candidates is checked in at most 27 comparisons. So total time is (number of calls) x O(1) = O(9<sup>m</sup>) in the worst case.</p>
+        <p>The check against the row, column and box prunes most branches early, so real puzzles need far fewer calls than 9<sup>m</sup>. The Stress test sample shows what happens when pruning helps very little: the search runs into the call limit.</p>
+      </article>
+
+      <article class="panel">
+        <h3>Space complexity</h3>
+        <p><strong>O(m)</strong> extra space, which is at most 81 stack frames. Each recursive call adds one frame and the deepest chain is one call per empty cell. The board itself (81 numbers) is changed in place and never copied inside the recursion.</p>
+        <p>For a fixed 9x9 board this is a constant, O(1). For a general n x n board it is O(n<sup>2</sup>).</p>
+        <p>The step list that this page records for the animation is extra memory used only by the visualizer (capped at 50,000 steps). The algorithm does not need it.</p>
+        <p>Solving generalised Sudoku on larger boards is known to be NP-complete, which is why no known algorithm avoids exponential worst cases.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="wrap footer">
+    <p>Built with HTML, CSS and vanilla JavaScript. No backend, no installation: everything runs in your browser.</p>
+  </footer>
+
+  <script src="puzzles.js"></script>
+  <script src="solver.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
